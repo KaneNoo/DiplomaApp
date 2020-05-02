@@ -1,0 +1,10 @@
+#JSGF V1.0;
+
+grammar command;
+
+<action> = (открой | создать | напиши | отправь | позвони);
+<object> = (шлагбаум | сообщение | команду);
+<recipient> = (даша | егор | мама);
+
+public <command> = <action> [<object>] [<recipient>];
+

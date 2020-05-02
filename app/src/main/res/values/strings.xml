@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+    <string name="app_name">DiplomaApp</string>
+    <string name="newCommand_name">Создание новой команды</string>
+    
+    <string name="kws_caption">To start demonstration say \"слушай\".</string>
+    <string name="command_caption">Say some commands</string>
+
+
+</resources>

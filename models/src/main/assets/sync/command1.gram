@@ -1,0 +1,7 @@
+#JSGF V1.0;
+
+grammar сommand1;
+
+<commands> = (создать команду);
+
+public <command> = <commands>;
