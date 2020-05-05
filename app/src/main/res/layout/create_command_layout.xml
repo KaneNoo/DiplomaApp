@@ -1,9 +1,40 @@
 <?xml version="1.0" encoding="utf-8"?>
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
+
+    <EditText
+        android:id="@+id/new_command_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+
+        android:gravity="center_horizontal"
+
+        android:hint="Голосовая команда"
+        android:textAlignment="center"
+
+        app:layout_constraintBottom_toTopOf="@+id/new_command_type_spinner"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Spinner
+        android:id="@+id/new_command_type_spinner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:spinnerMode="dropdown"
+
+
+
+        android:layout_marginBottom="68dp"
+        app:layout_constraintBottom_toTopOf="@+id/extra_phone_number"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintStart_toStartOf="parent" />
+
 
 
     <EditText
@@ -32,7 +63,7 @@
         android:layout_height="150sp"
         android:layout_marginBottom="100dp"
         android:textAlignment="viewStart"
-        android:textSize="30sp"
+        android:textSize="25sp"
 
         android:hint="Введите текст"
 
@@ -48,7 +79,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
 
-        android:onClick="putExtrasClick"
+        android:onClick="confirmClick"
 
         android:text="Подтвердить"
         android:textAlignment="center"

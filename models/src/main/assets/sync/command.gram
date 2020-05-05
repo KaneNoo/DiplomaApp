@@ -2,9 +2,10 @@
 
 grammar command;
 
-<action> = (открой | создать | напиши | отправь | позвони);
-<object> = (шлагбаум | сообщение | команду);
-<recipient> = (даша | егор | мама);
+<action> = (создать команду | ручной ввод);
+<call> = <NULL>;
+<message> = <NULL>;
+<geomark> = <NULL>;
 
-public <command> = <action> [<object>] [<recipient>];
 
+public <command> = [<action>] [<call>] [<message>] [<geomark>];

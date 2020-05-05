@@ -8,19 +8,24 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-
-
-    <LinearLayout
+   <!-- <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
+
         <EditText
-            android:id="@+id/newcommand_name"
+            android:id="@+id/new_command_name"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:hint="Команда"
-            android:layout_weight="1" />
+            android:layout_weight="1"
+
+            android:hint="команда"
+
+            android:textAlignment="center"
+            android:gravity="center_horizontal"
+
+            />
 
         <Spinner
             android:id="@+id/new_command_type_spinner"
@@ -29,15 +34,21 @@
             android:layout_weight="1"/>
 
         <Button
-            android:id="@+id/new_command_extra"
-            android:text="Extras"
-            android:onClick="putExtrasClick"
+            android:id="@+id/new_command_extra_button"
             android:layout_width="0dp"
+            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:layout_weight="1"/>
+
+            android:hint="Внести данные"
+
+            android:onClick="setExtrasClick"
+
+            />
+
+
 
     </LinearLayout>
-
+-->
 
 
     <LinearLayout
@@ -45,6 +56,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         >
+
     <Button
         android:id="@+id/new_command_button"
         android:layout_width="match_parent"
@@ -65,5 +77,8 @@
         android:layout_height="wrap_content"
         />
     </LinearLayout>
+
+
+
 
 </LinearLayout>

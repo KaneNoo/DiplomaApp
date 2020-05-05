@@ -32,10 +32,8 @@ package edu.isu.diploma;
 
 import android.Manifest;
 import android.app.Activity;
-import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -43,15 +41,12 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.telephony.SmsManager;
-import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
-import java.net.URI;
 import java.util.HashMap;
 
 import edu.cmu.pocketsphinx.Assets;
@@ -59,8 +54,6 @@ import edu.cmu.pocketsphinx.Hypothesis;
 import edu.cmu.pocketsphinx.RecognitionListener;
 import edu.cmu.pocketsphinx.SpeechRecognizer;
 import edu.cmu.pocketsphinx.SpeechRecognizerSetup;
-
-import static java.net.Proxy.Type.HTTP;
 
 public class PocketSphinxActivity extends Activity implements
         RecognitionListener {
@@ -79,9 +72,14 @@ public class PocketSphinxActivity extends Activity implements
     private SpeechRecognizer recognizer;
     private HashMap<String, Integer> captions;
 
+
     @Override
     public void onCreate(Bundle state) {
         super.onCreate(state);
+
+
+
+
 
         // Prepare the data for UI
 
@@ -203,7 +201,7 @@ public class PocketSphinxActivity extends Activity implements
                 switch (type) {
                     case "команда":
                         Intent newCommandIntent;
-                        newCommandIntent = new Intent(this, NewCommand.class);
+                        newCommandIntent = new Intent(this, CommandList.class);
 
                         db.close();
                         helper.close();
@@ -325,6 +323,7 @@ public class PocketSphinxActivity extends Activity implements
         // Create grammar-based search for selection between demos
         File commandGrammar = new File(assetsDir, "command.gram");
         recognizer.addGrammarSearch(COMMAND_SEARCH, commandGrammar);
+
 
     }
 
