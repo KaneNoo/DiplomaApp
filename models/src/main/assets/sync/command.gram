@@ -2,7 +2,7 @@
 
 grammar command;
 
-<action> = (создать команду | ручной ввод);
+<action> = создать команду | ручной ввод;
 <call> = <NULL>;
 <message> = <NULL>;
 <geomark> = <NULL>;

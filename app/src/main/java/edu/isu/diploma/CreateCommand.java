@@ -23,10 +23,14 @@ import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
@@ -108,6 +112,8 @@ public class CreateCommand extends Activity {
 
             newCommandName = findViewById(R.id.new_command_name);
             String command = newCommandName.getText().toString().toLowerCase();
+            command = command.trim();
+            Log.d("DEBUG", "команда (вдруг с пробелами)");
 
             newCommandValues.put(DBHelper.KEY_COMMAND, command);
             newCommandValues.put(DBHelper.KEY_TYPE, selectedType.toLowerCase());
@@ -116,7 +122,6 @@ public class CreateCommand extends Activity {
 
             db.insert(DBHelper.TABLE_COMMANDS, null, newCommandValues);
             addCommandToGrammar(selectedType, command);
-
 
 
             finish();
@@ -200,9 +205,12 @@ public class CreateCommand extends Activity {
         try {
 
             boolean lineisFound = false; // для отслеживания, нашлась ли строка единожды, слово повторяется в <command>
-            AssetManager manager = getAssets();
-            InputStream grammar = manager.open("sync/command.gram");
-            InputStreamReader isr = new InputStreamReader(grammar);
+            File internalStorageDir = getFilesDir();
+            File grammar = new File(internalStorageDir + "/command.gram");
+
+            InputStream is = new FileInputStream(grammar);
+            InputStreamReader isr = new InputStreamReader(is);
+
             BufferedReader bufferedReader = new BufferedReader(isr);
 
             String line, oldLine = "", newLine;
@@ -217,18 +225,28 @@ public class CreateCommand extends Activity {
                 }
             }
 
-            grammar.close();
             bufferedReader.close();
 
             String fileContents = stringBuffer.toString();
 
             if (oldLine.contains("NULL")) {
-                newLine = oldLine.replaceAll("<NULL>", command);
+                newLine = oldLine.replace("<NULL>", "(" + command + ")");
             } else {
                 newLine = oldLine.replace(");", " | " + command + ");");
             }
 
             fileContents = fileContents.replace(oldLine, newLine);
+
+
+            FileWriter writer = new FileWriter(internalStorageDir + "/command.gram");
+            writer.append(fileContents);
+            writer.flush();
+            writer.close();
+
+            bufferedReader.close();
+            isr.close();
+            is.close();
+
 
 
 

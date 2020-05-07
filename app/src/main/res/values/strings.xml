@@ -4,8 +4,8 @@
     <string name="app_name">DiplomaApp</string>
     <string name="newCommand_name">Создание новой команды</string>
     
-    <string name="kws_caption">To start demonstration say \"слушай\".</string>
-    <string name="command_caption">Say some commands</string>
+    <string name="kws_caption">Для старта скажите \"слушай\".</string>
+    <string name="command_caption">Слушаю ваши команды</string>
 
 
 </resources>

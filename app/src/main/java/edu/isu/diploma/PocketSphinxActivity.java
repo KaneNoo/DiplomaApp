@@ -32,8 +32,11 @@ package edu.isu.diploma;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.AssetManager;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -41,11 +44,20 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.util.Log;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 
@@ -69,6 +81,8 @@ public class PocketSphinxActivity extends Activity implements
     /* Used to handle permission request */
     private static final int PERMISSIONS_REQUEST_RECORD_AUDIO = 1;
 
+    SharedPreferences prefs = null;
+
     private SpeechRecognizer recognizer;
     private HashMap<String, Integer> captions;
 
@@ -77,8 +91,7 @@ public class PocketSphinxActivity extends Activity implements
     public void onCreate(Bundle state) {
         super.onCreate(state);
 
-
-
+        prefs = getSharedPreferences("edu.isu.diploma.DiplomaApp", MODE_PRIVATE);
 
 
         // Prepare the data for UI
@@ -170,10 +183,11 @@ public class PocketSphinxActivity extends Activity implements
             return;
 
         String text = hypothesis.getHypstr();
-        if (text.equals(KEYPHRASE))
+        if (text.equals(KEYPHRASE)) {
+            updateGrammar();
             switchSearch(COMMAND_SEARCH);
+        }
         else
-
             ((TextView) findViewById(R.id.result_text)).setText(text);
     }
 
@@ -189,7 +203,6 @@ public class PocketSphinxActivity extends Activity implements
 
             Toast.makeText(this, command, Toast.LENGTH_SHORT).show();
 
-            //Сделать не по команде, а через запрос в БД к типу
 
             if (!command.equals(KEYPHRASE)) {
                 DBHelper helper = new DBHelper(this);
@@ -197,62 +210,67 @@ public class PocketSphinxActivity extends Activity implements
                 String type = DBHelper.getCommandType(db, command);
 
 
-                assert type != null;
-                switch (type) {
-                    case "команда":
-                        Intent newCommandIntent;
-                        newCommandIntent = new Intent(this, CommandList.class);
+                try {
+                    switch (type) {
+                        case "команда":
+                            Intent newCommandIntent;
+                            newCommandIntent = new Intent(this, CommandList.class);
 
-                        db.close();
-                        helper.close();
+                            db.close();
+                            helper.close();
 
-                        startActivity(newCommandIntent);
-                        break;
+                            startActivity(newCommandIntent);
 
-                    case "звонок":
-                        Intent newCallIntent;
-                        newCallIntent = new Intent(Intent.ACTION_CALL);
 
-                        String phoneNumber = DBHelper.extraGetPhoneNumber(db, command);
-                        db.close();
-                        helper.close();
+                            break;
 
-                        Uri calling = Uri.parse("tel: " + phoneNumber);
+                        case "звонок":
+                            Intent newCallIntent;
 
-                        newCallIntent.setData(calling);
 
-                        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                            if(phoneNumber != null) {
-                                startActivity(newCallIntent);
+                            db = helper.getReadableDatabase();
+                            String phoneNumber = DBHelper.extraGetPhoneNumber(db, command);
+                            db.close();
+                            helper.close();
+
+                            newCallIntent = new Intent(Intent.ACTION_CALL, Uri.fromParts("tel", phoneNumber, null));
+
+                            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                                //request permission from user if the app hasn't got the required permission
+                                ActivityCompat.requestPermissions(this,
+                                        new String[]{Manifest.permission.CALL_PHONE},   //request specific permission from user
+                                        10);
+                            } else {     //have got permission
+                                try {
+                                    startActivity(newCallIntent);  //call activity and make phone call
+                                } catch (android.content.ActivityNotFoundException ex) {
+                                    Toast.makeText(getApplicationContext(), "Запрещен вызов", Toast.LENGTH_SHORT).show();
+                                }
                             }
-                            else {
+                            break;
+
+                        case "смс":
+                            Intent newMessageIntent;
+                            newMessageIntent = new Intent(Intent.ACTION_SENDTO);
+                            db = helper.getReadableDatabase();
+                            String[] data = DBHelper.extraGetForSMS(db, command);
+
+                            db.close();
+                            helper.close();
+                            if (data != null) {
+                                newMessageIntent.setData(Uri.parse("smsto: " + data[0]));
+                                newMessageIntent.putExtra("sms_body", data[1]);
+
+                                startActivity(newMessageIntent);
+                                finish();
+                            } else {
                                 Toast.makeText(getApplicationContext(), "Команда не существует", Toast.LENGTH_LONG).show();
                             }
-                        }
-                        else {
-                            Toast.makeText(getApplicationContext(), "Запрещена отправка сообщений", Toast.LENGTH_LONG).show();
-                        }
 
-                        break;
-
-                    case "смс":
-                       Intent newMessageIntent;
-                       newMessageIntent = new Intent(Intent.ACTION_SENDTO);
-
-                       String[] data = DBHelper.extraGetForSMS(db, command);
-
-                       db.close();
-                       helper.close();
-                       if(data != null) {
-                           newMessageIntent.setData(Uri.parse("smsto: " + data[0]));
-                           newMessageIntent.putExtra("sms_body", data[1]);
-
-                           startActivity(newMessageIntent);
-                       } else {
-                           Toast.makeText(getApplicationContext(), "Команда не существует", Toast.LENGTH_LONG).show();
-                       }
-
-                        break;
+                            break;
+                    }
+                } catch (NullPointerException e){
+                    Toast.makeText(this, "Проблемы с исполнением команды", Toast.LENGTH_SHORT).show();
                 }
             }
 
@@ -321,8 +339,14 @@ public class PocketSphinxActivity extends Activity implements
         recognizer.addKeyphraseSearch(KWS_SEARCH, KEYPHRASE);
 
         // Create grammar-based search for selection between demos
-        File commandGrammar = new File(assetsDir, "command.gram");
-        recognizer.addGrammarSearch(COMMAND_SEARCH, commandGrammar);
+        if(prefs.getBoolean("firstrun", true)){
+            copyFile(this);
+            prefs.edit().putBoolean("firstrun", false).apply();
+
+        }
+
+        File grammar = new File(getFilesDir() + "/command.gram");
+        recognizer.addGrammarSearch(COMMAND_SEARCH, grammar);
 
 
     }
@@ -337,6 +361,46 @@ public class PocketSphinxActivity extends Activity implements
         switchSearch(KWS_SEARCH);
     }
 
+    private void copyFile(Context context) {
+        AssetManager assetManager = context.getAssets();
+        try {
+            InputStream in = assetManager.open("sync/command.gram");
+            File grammar = new File(getFilesDir() + "/command.gram");
+
+
+            InputStreamReader isr = new InputStreamReader(in);
+            BufferedReader bufferedReader = new BufferedReader(isr);
+
+            String line;
+            StringBuilder stringBuilder = new StringBuilder();
+
+            while ((line = bufferedReader.readLine()) != null) {
+                stringBuilder.append(line + System.lineSeparator());
+
+            }
+
+            bufferedReader.close();
+
+            String fileContents = stringBuilder.toString();
+
+            FileWriter writer = new FileWriter(grammar);
+            writer.append(fileContents);
+            writer.flush();
+            writer.close();
+
+            bufferedReader.close();
+            isr.close();
+
+
+        } catch (Exception e) {
+            Log.d("DEBUG", "Проблемы с копированием словаря " + e.getLocalizedMessage());
+        }
+    }
+
+    public void updateGrammar(){
+        File grammar = new File(getFilesDir() + "/command.gram");
+        recognizer.addGrammarSearch(COMMAND_SEARCH, grammar);
+    }
 
 
 

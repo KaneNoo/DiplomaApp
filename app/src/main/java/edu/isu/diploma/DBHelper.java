@@ -55,12 +55,26 @@ public class DBHelper extends SQLiteOpenHelper {
 
         String type;
 
-        String selection = DBHelper.KEY_COMMAND + " = ?" ;
+        //TODO: обработать null
+
+        String selection = DBHelper.KEY_COMMAND + " LIKE ? " ;
         String[] selectionArgs = {command.toLowerCase()};
+
+        Cursor cursor = db.query(DBHelper.TABLE_COMMANDS, null, null, null, null, null, null);
+        cursor.moveToFirst();
+
+        Log.d("DEBUG", "Все записи в БД");
+        while(!cursor.isAfterLast()){
+            Log.d("DEBUG", cursor.getString(1) + " | " + cursor.getString(2) + " | " + cursor.getString(3));
+            cursor.moveToNext();
+        }
 
 
         Cursor commandNameCursor = db.query(DBHelper.TABLE_COMMANDS, null, selection, selectionArgs, null, null, null, null);
+
         commandNameCursor.moveToFirst();
+
+        Log.d("DEBUG", "Значения в БД по запросу: " + commandNameCursor.getCount());
 
 
         try{
@@ -123,7 +137,6 @@ public class DBHelper extends SQLiteOpenHelper {
     static String[] extraGetForSMS(SQLiteDatabase db, String command){
         String selection = DBHelper.KEY_COMMAND + " = ?" ;
         String[] selectionArgs = {command.toLowerCase()};
-
 
         Cursor commandNameCursor = db.query(DBHelper.TABLE_COMMANDS, null, selection, selectionArgs, null, null, null, null);
         commandNameCursor.moveToFirst();

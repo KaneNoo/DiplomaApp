@@ -16,7 +16,6 @@ import android.widget.SimpleCursorAdapter;
 import android.widget.Spinner;
 import android.widget.Toast;
 
-import edu.cmu.pocketsphinx.Jsgf;
 
 public class CommandList extends Activity {
 
@@ -25,16 +24,16 @@ public class CommandList extends Activity {
     DBHelper helper;
     SimpleCursorAdapter adapter;
 
-    int reqCode = 101;
-
 
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.command_list_layout);
 
+        setContentView(R.layout.command_list_layout);
         getCommandList();
+
+
 
 
 
@@ -48,7 +47,6 @@ public class CommandList extends Activity {
         startActivity(intent);
 
         getCommandList();
-
 
 
     }
