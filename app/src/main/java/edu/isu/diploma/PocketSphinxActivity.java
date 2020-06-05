@@ -38,9 +38,14 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
 import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
@@ -50,14 +55,10 @@ import android.widget.Toast;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 import java.util.HashMap;
 
@@ -103,7 +104,7 @@ public class PocketSphinxActivity extends Activity implements
 
         setContentView(R.layout.main);
         ((TextView) findViewById(R.id.caption_text))
-                .setText("Preparing the recognizer");
+                .setText("Подготовка системы \n распознавания речи");
 
         // Check if user has given permission to record audio
         int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
@@ -139,7 +140,7 @@ public class PocketSphinxActivity extends Activity implements
         protected void onPostExecute(Exception result) {
             if (result != null) {
                 ((TextView) activityReference.get().findViewById(R.id.caption_text))
-                        .setText("Failed to init recognizer " + result);
+                        .setText("Возникли проблемы с подготовкой \n системы распознавания речи.\n Попробуйте перезапустить \n приложение \n" + result);
             } else {
                 activityReference.get().switchSearch(KWS_SEARCH);
             }
@@ -186,8 +187,7 @@ public class PocketSphinxActivity extends Activity implements
         if (text.equals(KEYPHRASE)) {
             updateGrammar();
             switchSearch(COMMAND_SEARCH);
-        }
-        else
+        } else
             ((TextView) findViewById(R.id.result_text)).setText(text);
     }
 
@@ -253,13 +253,13 @@ public class PocketSphinxActivity extends Activity implements
                             Intent newMessageIntent;
                             newMessageIntent = new Intent(Intent.ACTION_SENDTO);
                             db = helper.getReadableDatabase();
-                            String[] data = DBHelper.extraGetForSMS(db, command);
+                            String[] message = DBHelper.extraGetForSMS(db, command);
 
                             db.close();
                             helper.close();
-                            if (data != null) {
-                                newMessageIntent.setData(Uri.parse("smsto: " + data[0]));
-                                newMessageIntent.putExtra("sms_body", data[1]);
+                            if (message != null) {
+                                newMessageIntent.setData(Uri.parse("smsto: " + message[0]));
+                                newMessageIntent.putExtra("sms_body", message[1]);
 
                                 startActivity(newMessageIntent);
                                 finish();
@@ -268,8 +268,40 @@ public class PocketSphinxActivity extends Activity implements
                             }
 
                             break;
+
+                        case "геометка":
+                            Intent newLocationIntent;
+                            newLocationIntent = new Intent(Intent.ACTION_SENDTO);
+                            db = helper.getReadableDatabase();
+                            String[] location = DBHelper.extraGetForSMS(db, command);
+
+
+                            Location myLocation = getLocation();
+                            String link = null;
+                            if(myLocation != null){
+                                link = "\n https://maps.google.com/?q=" + myLocation.getLatitude() + "," + myLocation.getLongitude();
+                            }
+
+                            db.close();
+                            helper.close();
+                            if (location != null) {
+                                location[1] += link;
+                                newLocationIntent.setData(Uri.parse("smsto: " + location[0]));
+                                newLocationIntent.putExtra("sms_body", location[1]);
+
+                                try{
+                                startActivity(newLocationIntent);
+                                } catch (android.content.ActivityNotFoundException ex) {
+                            Toast.makeText(getApplicationContext(), "Запрещено", Toast.LENGTH_SHORT).show();
+                        }
+
+                            } else {
+                                Toast.makeText(getApplicationContext(), "Команда не существует", Toast.LENGTH_LONG).show();
+                            }
+
+                            break;
                     }
-                } catch (NullPointerException e){
+                } catch (NullPointerException e) {
                     Toast.makeText(this, "Проблемы с исполнением команды", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -278,13 +310,7 @@ public class PocketSphinxActivity extends Activity implements
         }
 
 
-
-
     }
-
-
-
-
 
     @Override
     public void onBeginningOfSpeech() {
@@ -307,8 +333,7 @@ public class PocketSphinxActivity extends Activity implements
         if (searchName.equals(KWS_SEARCH)) {
             recognizer.startListening(searchName);
 
-        }
-        else
+        } else
             recognizer.startListening(searchName, 10000);
 
         String caption = getResources().getString(captions.get(searchName));
@@ -339,7 +364,7 @@ public class PocketSphinxActivity extends Activity implements
         recognizer.addKeyphraseSearch(KWS_SEARCH, KEYPHRASE);
 
         // Create grammar-based search for selection between demos
-        if(prefs.getBoolean("firstrun", true)){
+        if (prefs.getBoolean("firstrun", true)) {
             copyFile(this);
             prefs.edit().putBoolean("firstrun", false).apply();
 
@@ -397,16 +422,30 @@ public class PocketSphinxActivity extends Activity implements
         }
     }
 
-    public void updateGrammar(){
+    public void updateGrammar() {
         File grammar = new File(getFilesDir() + "/command.gram");
         recognizer.addGrammarSearch(COMMAND_SEARCH, grammar);
     }
 
 
+    private Location getLocation() {
 
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
 
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 
-
+            ActivityCompat.requestPermissions(
+                   this,
+                    new String[]{
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION}, 8);
+        } else {
+            Location location = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+            return location;
+        }
+        return null;
+    }
 
 
 }

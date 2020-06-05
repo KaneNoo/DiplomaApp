@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.CALL_PHONE"/>
     <uses-permission android:name="android.permission.SEND_SMS"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
 
     <application
         android:allowBackup="false"
@@ -25,7 +26,7 @@
         <activity
             android:name="edu.isu.diploma.CommandList"
             android:label="@string/newCommand_name" />
-        <activity android:name=".CreateCommand" />
+        <activity android:name=".CommandCreator" />
     </application>
 
 

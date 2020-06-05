@@ -55,8 +55,6 @@ public class DBHelper extends SQLiteOpenHelper {
 
         String type;
 
-        //TODO: обработать null
-
         String selection = DBHelper.KEY_COMMAND + " LIKE ? " ;
         String[] selectionArgs = {command.toLowerCase()};
 

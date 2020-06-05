@@ -24,17 +24,15 @@ import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
-public class CreateCommand extends Activity {
+public class CommandCreator extends Activity {
 
     EditText newCommandName;
     Spinner commandTypesSpinner;
@@ -80,6 +78,65 @@ public class CreateCommand extends Activity {
 
     }
 
+    boolean containsYO(String command) {
+
+        ArrayList<String> words = new ArrayList<String>(Arrays.asList(command.split(" ")));
+        for(int i = 0; i < words.size(); i++){
+
+            if(!words.get(i).contains("е") || !words.get(i).contains("ё")){
+
+                words.remove(i);
+                i--;
+            }
+        }
+
+        if(words.size() == 0) {
+            return false;
+        }
+
+
+        BufferedReader reader = null;
+        try {
+            reader = new BufferedReader(new InputStreamReader(getAssets().open("sync/ru.dic")));
+
+            String line;
+
+            while ((line = reader.readLine()) != null){
+
+                    if (line.contains("ё")){
+                        String dictWord = line.split(" ")[0];
+                        String[] dictWordParts = dictWord.split("ё");
+
+                        for(String word: words){
+                            int size;
+                            String[] wordParts = word.split("ё");
+
+                            if(wordParts.length == dictWordParts.length) {
+                                size = wordParts.length;
+                                int checked = 0;
+                                for (int i = 0; i < size; i++){
+
+                                    if(wordParts[i].equals(dictWordParts[i])){
+                                        checked++;
+                                    }
+                                }
+
+                                if(size == checked){
+                                    reader.close();
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+            }
+            reader.close();
+            return false;
+
+        } catch (IOException e){
+            Log.d("DEBUG", "Проблемы со словарем ru.dic");
+            return false;
+        }
+    }
 
     public void confirmClick(View view){
 
@@ -102,8 +159,6 @@ public class CreateCommand extends Activity {
                 extra.put("text", text);
             }
 
-
-
             ContentValues newCommandValues = new ContentValues();
 
             int selectedTypeID = (int)commandTypesSpinner.getSelectedItemId();
@@ -123,10 +178,7 @@ public class CreateCommand extends Activity {
             db.insert(DBHelper.TABLE_COMMANDS, null, newCommandValues);
             addCommandToGrammar(selectedType, command);
 
-
             finish();
-
-
 
     } catch (NumberFormatException e){
 
@@ -163,8 +215,7 @@ public class CreateCommand extends Activity {
 
             case "геометка":
 
-                forPhoneNumber.setVisibility(View.GONE);
-                forPhoneNumber.setText("");
+                forPhoneNumber.setVisibility(View.VISIBLE);
 
                 forText.setVisibility(View.VISIBLE);
                 break;
@@ -246,10 +297,6 @@ public class CreateCommand extends Activity {
             bufferedReader.close();
             isr.close();
             is.close();
-
-
-
-
 
         } catch (IOException e) {
             Log.d("DEBUG", "Проблемы с записью в словарь: " + e.getLocalizedMessage());

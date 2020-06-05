@@ -1,7 +1,6 @@
 package edu.isu.diploma;
 
 import android.app.Activity;
-import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -9,12 +8,8 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
-import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
-import android.widget.Spinner;
-import android.widget.Toast;
 
 
 public class CommandList extends Activity {
@@ -25,7 +20,6 @@ public class CommandList extends Activity {
     SimpleCursorAdapter adapter;
 
 
-
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -33,17 +27,13 @@ public class CommandList extends Activity {
         setContentView(R.layout.command_list_layout);
         getCommandList();
 
-
-
-
-
     }
 
 
 
-        public void addNewCommandClick(View view){
+    public void addNewCommandClick(View view){
 
-        Intent intent = new Intent(this, CreateCommand.class);
+        Intent intent = new Intent(this, CommandCreator.class);
         startActivity(intent);
 
         getCommandList();
