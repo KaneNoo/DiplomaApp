@@ -32,11 +32,13 @@ package edu.isu.diploma;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.AssetManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.location.LocationListener;
@@ -45,11 +47,14 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
+import android.view.View;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -87,6 +92,8 @@ public class PocketSphinxActivity extends Activity implements
     private SpeechRecognizer recognizer;
     private HashMap<String, Integer> captions;
 
+    ProgressBar progressBar;
+
 
     @Override
     public void onCreate(Bundle state) {
@@ -105,6 +112,9 @@ public class PocketSphinxActivity extends Activity implements
         setContentView(R.layout.main);
         ((TextView) findViewById(R.id.caption_text))
                 .setText("Подготовка системы \n распознавания речи");
+
+        progressBar = findViewById(R.id.circle_bar);
+        progressBar.setVisibility(View.VISIBLE);
 
         // Check if user has given permission to record audio
         int permissionCheck = ContextCompat.checkSelfPermission(getApplicationContext(), Manifest.permission.RECORD_AUDIO);
@@ -225,41 +235,69 @@ public class PocketSphinxActivity extends Activity implements
                             break;
 
                         case "звонок":
-                            Intent newCallIntent;
-
-
+                            Intent callIntent;
                             db = helper.getReadableDatabase();
-                            String phoneNumber = DBHelper.extraGetPhoneNumber(db, command);
+                            String[] forCall = DBHelper.extraGetForCall(db, command);
+                            String phoneNumber = forCall[0];
+                            String app = forCall[1];
+                            String contactID = forCall[2];
                             db.close();
                             helper.close();
 
-                            newCallIntent = new Intent(Intent.ACTION_CALL, Uri.fromParts("tel", phoneNumber, null));
+                            if(app.equals("Телефон")) {
+                                callIntent = new Intent(Intent.ACTION_CALL, Uri.fromParts("tel", phoneNumber, null));
 
-                            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
-                                //request permission from user if the app hasn't got the required permission
-                                ActivityCompat.requestPermissions(this,
-                                        new String[]{Manifest.permission.CALL_PHONE},   //request specific permission from user
-                                        10);
-                            } else {     //have got permission
-                                try {
-                                    startActivity(newCallIntent);  //call activity and make phone call
-                                } catch (android.content.ActivityNotFoundException ex) {
-                                    Toast.makeText(getApplicationContext(), "Запрещен вызов", Toast.LENGTH_SHORT).show();
+                                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) != PackageManager.PERMISSION_GRANTED) {
+                                    //request permission from user if the app hasn't got the required permission
+                                    ActivityCompat.requestPermissions(this,
+                                            new String[]{Manifest.permission.CALL_PHONE},   //request specific permission from user
+                                            10);
+                                } else {     //have got permission
+                                    try {
+                                        startActivity(callIntent);  //call activity and make phone call
+                                    } catch (android.content.ActivityNotFoundException ex) {
+                                        Toast.makeText(getApplicationContext(), "Запрещен вызов", Toast.LENGTH_SHORT).show();
+                                    }
                                 }
+                                break;
                             }
-                            break;
+                            else if (app.equals("WhatsApp")){
+                                Intent whatsAppCall = new Intent();
+                                whatsAppCall.setAction(Intent.ACTION_VIEW);
+                                String data = "content://com.android.contacts/data/" + contactID;
+                                String watype = "vnd.android.cursor.item/vnd.com.whatsapp.voip.call";
+                                whatsAppCall.setDataAndType(Uri.parse(data), watype);
+                                whatsAppCall.setPackage("com.whatsapp");
+                                startActivity(whatsAppCall);
+
+
+                                break;
+
+
+
+                            }
+                            else if(app.equals("Viber")){
+                                Uri phone = Uri.parse("tel:" + Uri.encode(phoneNumber));
+                                Intent ViberCallIntent = new Intent("android.intent.action.VIEW");
+                                ViberCallIntent.setClassName("com.viber.voip", "com.viber.voip.WelcomeActivity");
+                                ViberCallIntent.setData(phone);
+                                startActivity(ViberCallIntent);
+                                break;
+                            }
 
                         case "смс":
                             Intent newMessageIntent;
                             newMessageIntent = new Intent(Intent.ACTION_SENDTO);
                             db = helper.getReadableDatabase();
-                            String[] message = DBHelper.extraGetForSMS(db, command);
+                            String[] forMessage = DBHelper.extraGetForMessage(db, command);
+
 
                             db.close();
                             helper.close();
-                            if (message != null) {
-                                newMessageIntent.setData(Uri.parse("smsto: " + message[0]));
-                                newMessageIntent.putExtra("sms_body", message[1]);
+
+                            if (forMessage != null) {
+                                newMessageIntent.setData(Uri.parse("smsto: " + forMessage[0]));
+                                newMessageIntent.putExtra("sms_body", forMessage[1]);
 
                                 startActivity(newMessageIntent);
                                 finish();
@@ -273,7 +311,7 @@ public class PocketSphinxActivity extends Activity implements
                             Intent newLocationIntent;
                             newLocationIntent = new Intent(Intent.ACTION_SENDTO);
                             db = helper.getReadableDatabase();
-                            String[] location = DBHelper.extraGetForSMS(db, command);
+                            String[] location = DBHelper.extraGetForMessage(db, command);
 
 
                             Location myLocation = getLocation();
@@ -331,6 +369,10 @@ public class PocketSphinxActivity extends Activity implements
 
         // If we are not spotting, start listening with timeout (10000 ms or 10 seconds).
         if (searchName.equals(KWS_SEARCH)) {
+
+            progressBar = findViewById(R.id.circle_bar);
+            progressBar.setVisibility(View.GONE);
+
             recognizer.startListening(searchName);
 
         } else
@@ -378,7 +420,7 @@ public class PocketSphinxActivity extends Activity implements
 
     @Override
     public void onError(Exception error) {
-        ((TextView) findViewById(R.id.caption_text)).setText(error.getMessage());
+        ((TextView) findViewById(R.id.caption_text)).setText(R.string.error_caption);
     }
 
     @Override

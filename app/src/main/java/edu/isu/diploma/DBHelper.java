@@ -1,5 +1,6 @@
 package edu.isu.diploma;
 
+import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.CursorIndexOutOfBoundsException;
@@ -7,6 +8,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.widget.EditText;
+import android.widget.ListView;
+import android.widget.SimpleCursorAdapter;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -58,22 +62,19 @@ public class DBHelper extends SQLiteOpenHelper {
         String selection = DBHelper.KEY_COMMAND + " LIKE ? " ;
         String[] selectionArgs = {command.toLowerCase()};
 
-        Cursor cursor = db.query(DBHelper.TABLE_COMMANDS, null, null, null, null, null, null);
+        /*Cursor cursor = db.query(DBHelper.TABLE_COMMANDS, null, null, null, null, null, null);
         cursor.moveToFirst();
 
         Log.d("DEBUG", "Все записи в БД");
         while(!cursor.isAfterLast()){
             Log.d("DEBUG", cursor.getString(1) + " | " + cursor.getString(2) + " | " + cursor.getString(3));
             cursor.moveToNext();
-        }
-
+        }*/
 
         Cursor commandNameCursor = db.query(DBHelper.TABLE_COMMANDS, null, selection, selectionArgs, null, null, null, null);
-
         commandNameCursor.moveToFirst();
 
         Log.d("DEBUG", "Значения в БД по запросу: " + commandNameCursor.getCount());
-
 
         try{
             type = commandNameCursor.getString(2);
@@ -88,7 +89,7 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
-    static String extraGetPhoneNumber(SQLiteDatabase db, String command){
+    static String[] extraGetForCall(SQLiteDatabase db, String command){
 
         String selection = DBHelper.KEY_COMMAND + " = ?" ;
         String[] selectionArgs = {command.toLowerCase()};
@@ -99,7 +100,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
         try {
             JSONObject extraJSON = new JSONObject(commandNameCursor.getString(3));
-            return extraJSON.getString("phoneNumber");
+            return new String[]{extraJSON.getString("phoneNumber"), extraJSON.getString("app"), extraJSON.getString("contactID")};
         } catch (JSONException e){
             Log.d("DEBUG", e.getLocalizedMessage());
             return null;
@@ -132,7 +133,7 @@ public class DBHelper extends SQLiteOpenHelper {
         }
     }
 
-    static String[] extraGetForSMS(SQLiteDatabase db, String command){
+    static String[] extraGetForMessage(SQLiteDatabase db, String command){
         String selection = DBHelper.KEY_COMMAND + " = ?" ;
         String[] selectionArgs = {command.toLowerCase()};
 
@@ -151,6 +152,30 @@ public class DBHelper extends SQLiteOpenHelper {
             db.close();
 
         }
+    }
+
+    static void getCommandList(Activity activity, ListView commandList){
+
+        DBHelper helper = new DBHelper(activity.getApplicationContext());
+
+        SQLiteDatabase db = helper.getReadableDatabase();
+
+        Cursor items = db.query(DBHelper.TABLE_COMMANDS, null, null, null, DBHelper.KEY_ID, null, null);
+        items.moveToFirst();
+        Log.d("DEBUG", "Команд в БД: " + items.getCount());
+
+        String[] commandFields = {items.getColumnName(1), items.getColumnName(2)};
+        int[] views = {R.id.command_name, R.id.command_action};
+
+        SimpleCursorAdapter adapter = new SimpleCursorAdapter(activity.getApplicationContext(), R.layout.command_list_line,
+                items, commandFields, views, 0);
+
+        commandList.setAdapter(adapter);
+
+        db.close();
+        helper.close();
+
+
     }
 
 }

@@ -17,12 +17,22 @@
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:gravity="center" >
+        android:gravity="center"
+        android:orientation="vertical">
 
         <TextView
             android:id="@+id/result_text"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <ProgressBar
+            android:id="@+id/circle_bar"
+            android:indeterminateDrawable="@drawable/progress_circle"
+            android:layout_width="150dp"
+            android:layout_height="150dp"
+
+            />
+
     </LinearLayout>
 </LinearLayout>

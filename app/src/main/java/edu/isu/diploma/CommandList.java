@@ -15,9 +15,6 @@ import android.widget.SimpleCursorAdapter;
 public class CommandList extends Activity {
 
     ListView commandList;
-    SQLiteDatabase db;
-    DBHelper helper;
-    SimpleCursorAdapter adapter;
 
 
     @Override
@@ -25,7 +22,8 @@ public class CommandList extends Activity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.command_list_layout);
-        getCommandList();
+        commandList = findViewById(R.id.command_list);
+        DBHelper.getCommandList(this, commandList);
 
     }
 
@@ -36,33 +34,9 @@ public class CommandList extends Activity {
         Intent intent = new Intent(this, CommandCreator.class);
         startActivity(intent);
 
-        getCommandList();
-
-
+        DBHelper.getCommandList(this, commandList);
     }
 
-    void getCommandList(){
-        commandList = findViewById(R.id.command_list);
-        helper = new DBHelper(this);
 
-        db = helper.getReadableDatabase();
-
-        Cursor items = db.query(DBHelper.TABLE_COMMANDS, null, null, null, DBHelper.KEY_ID, null, null);
-        items.moveToFirst();
-        Log.d("DEBUG", "Команд в БД: " + items.getCount());
-
-        String[] commandFields = {items.getColumnName(1), items.getColumnName(2)};
-        int[] views = {R.id.command_name, R.id.command_action};
-
-        adapter = new SimpleCursorAdapter(this, R.layout.command_list_line,
-                items, commandFields, views, 0);
-
-        commandList.setAdapter(adapter);
-
-        db.close();
-        helper.close();
-
-
-    }
 
 }
